@@ -177,96 +177,92 @@ Diese Fähigkeit zur **Musteridentifikation durch Emergenz** wird als Stärke de
 
 ```mermaid
 graph TD
-    A[Start: main] --> B[Lade Daten: data.csv]
+    A[Start main] --> B(Lade Daten)
     B --> C{Daten gültig?}
-    C -- Ja --> D[Starte GUI: start_gui]
-    C -- Nein --> Z_ERR1[Ende: Fehler]
-    D --> E[GUI: User Interaktion]
-    E --> F{Optional: Lade Einstellungen?}
+    C -- Ja --> D[Starte GUI]
+    C -- Nein --> Z_ERR1[Ende Fehler]
+    D --> E(GUI User Interaktion)
+    E --> F{Lade Einstellungen?}
     F -- Ja --> G[load_gui_settings]
     F -- Nein --> H
     G --> H
-    H --> I{Optional: Gemini Prompt?}
+    H --> I{Gemini Prompt?}
     I -- Ja --> J[Gemini Prompt Eingabe]
     I -- Nein --> K
     J --> K
-    K --> L{Klick: Simulation starten?}
+    K --> L{Starte Simulation?}
     L -- Nein --> E
     L -- Ja --> M[start_simulation_action]
-    M --> N[Starte Simulation Thread]
+    M --> N(Starte Simulation Thread)
 
     subgraph Simulation_Thread [Simulation Thread]
         direction TB
         N --> O[Netzwerk laden/initialisieren]
         O --> P[Verbinde Netzwerk]
         P --> Q[Start simulate_learning]
-
-        subgraph Epoch_Loop [Pro Epoche]
+        Q --> R(Reset Summen)
+        subgraph Input_Detail [Input Phase Details]
             direction TB
-            R[Reset Summen]
-            R --> S[Input Phase]
-                subgraph Input_Detail [Input Detail]
-                    direction TB
-                    S1[Hole normalisierte Antwort]
-                    S1 --> S2[propagate_signal: Frage -> Kategorie]
-                    S2 --> S3[Update Kategorie-Summe]
-                end
-            S --> T[Core Network Update]
-                subgraph Core_Update_Detail [Core Update Detail]
-                    direction TB
-                    T1[Berechne Aktivierung über Sigmoid]
-                    T1 --> T2[Modulation: Emotion/Noise]
-                    T2 --> T3[Speichere History]
-                    T3 --> T4{Ist MemoryNode?}
-                    T4 -- Ja --> T5[Promote MemoryNode]
-                    T4 -- Nein --> T6
-                    T5 --> T6[Sammle aktive Kategorien]
-                end
-            T --> U[Modul Aktionen]
-                subgraph Module_Detail [Module Detail]
-                    direction TB
-                    U1[Lese Netzwerkzustand]
-                    U1 --> U2[Führe Modul-Logik aus]
-                    U2 --> U3{Ändert globale Zustände?}
-                    U3 -- Ja --> U4[Update Emotion / Lernrate / Decay Rate / Social]
-                    U3 -- Nein --> U5
-                    U4 --> U5[Optional: social_influence]
-                end
-            U --> V[Lernen & Adaptation]
-                subgraph Lernen_Detail [Lernen Detail]
-                    direction TB
-                    V1[Hebbian Learning]
-                    V1 --> V2{Ändert Gewichte?}
-                    V2 --> V3{Reward Learning?}
-                    V3 -- Ja --> V4[Verstärke Verbindungen]
-                    V3 -- Nein --> V5
-                    V4 --> V5
-                    V5 --> V6[Weight Decay]
-                    V6 --> V7{Ändert Gewichte?}
-                end
-            V --> W[Recording]
-                subgraph Recording_Detail [Recording Detail]
-                    direction TB
-                    W1[Speichere Gewichte]
-                    W1 --> W2[Interpretation Epoche]
-                    W2 --> W3[Logge Interpretation]
-                end
-            W --> X{Nächste Epoche?}
-            X -- Ja --> R
+            S1(Hole normalisierte Antwort)
+            S1 --> S2[propagate_signal: Frage -> Kategorie]
+            S2 --> S3(Update Kategorie-Summe)
         end
-
+        R --> S1
+        subgraph Core_Update_Detail [Core Update Details]
+            direction TB
+            T1(Berechne Aktivierung über Sigmoid)
+            T1 --> T2(Modulation durch Emotion / Noise)
+            T2 --> T3(Speichere History)
+            T3 --> T4{Ist MemoryNode?}
+            T4 -- Ja --> T5(Promote MemoryNode)
+            T4 -- Nein --> T6(Sammle aktive Kategorien)
+            T5 --> T6
+        end
+        S3 --> T1
+        subgraph Module_Detail [Modul Aktionen Details]
+            direction TB
+            U1(Lese Netzwerkzustand)
+            U1 --> U2(Führe Modul-Logik aus)
+            U2 --> U3{Ändert globale Zustände?}
+            U3 -- Ja --> U4(Update Emotion / Lernrate / Decay)
+            U3 -- Nein --> U5(Optional: social_influence)
+            U4 --> U5
+        end
+        T6 --> U1
+        subgraph Lernen_Detail [Lernen & Adaptation Details]
+            direction TB
+            V1(Hebbian Learning)
+            V1 --> V2{Ändert Gewichte?}
+            V2 -- Ja --> V3{Reward Learning?}
+            V3 -- Ja --> V4(Verstärke Verbindungen)
+            V3 -- Nein --> V5(Nach Reward-Check)
+            V4 --> V5
+            V2 -- Nein --> V5
+            V5 --> V6(Weight Decay)
+            V6 --> V7{Ändert Gewichte?}
+        end
+        U5 --> V1
+        subgraph Recording_Detail [Aufzeichnung Details]
+            direction TB
+            W1(Speichere Gewichte)
+            W1 --> W2(Interpretation des Epoche-Zustands)
+            W2 --> W3(Logge Interpretation)
+        end
+        V7 --> W1
+        W3 --> X{Nächste Epoche?}
+        X -- Ja --> R
         X -- Nein --> Y[Ende simulate_learning]
         Y --> Z[Speichere Modell]
-        Z --> AA[Erzeuge finalen Text-Report]
-        AA --> BB[Berechne einfache Empfehlung]
-        BB --> CC[Erzeuge HTML-Report]
+        Z --> AA(Erzeuge finalen Text-Report)
+        AA --> BB(Berechne einfache Empfehlung)
+        BB --> CC(Erzeuge HTML-Report)
         CC --> DD{Gemini Prompt vorhanden?}
-        DD -- Ja --> EE[Hole Gemini Analyse]
+        DD -- Ja --> EE(Hole Gemini Analyse)
         DD -- Nein --> FF
         EE --> FF{Gemini Bericht erfolgreich?}
-        FF -- Ja --> GG[Plane Anzeige Gemini-Bericht]
+        FF -- Ja --> GG(Plane Anzeige Gemini-Bericht)
         FF -- Nein --> HH
-        GG --> HH[Generiere & Zeige Plots]
+        GG --> HH(Generiere & Zeige Plots)
         HH --> END_THREAD[Ende Thread]
     end
 
