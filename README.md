@@ -1,7 +1,7 @@
 # NeuroPersona: A Bio-Inspired Cognitive Architecture Simulation with LLM Interpretation
 
-**Version:** 1.1 (Datum: TT.MM.JJJJ)
-**Author:** [Dein Name/Handle]
+**Version:** 1.1 (Datum: 09.04.2025)
+**Author:** Ralf Krümmel/CipherCore
 
 ## Abstract
 
