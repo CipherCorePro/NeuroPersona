@@ -1,4 +1,8 @@
 # Whitepaper: NeuroPersona - Simulation kognitiver und emotionaler Analysen durch neuartige Netzwerkarchitektur
+---
+## Lizenz
+Dieses Projekt unterliegt der Lizenzbedingungen gemäß [LICENSE.txt](LICENSE.txt). 
+Jegliche Nutzung oder Veräußerung ohne ausdrückliche Genehmigung von Ralf Krümmel ist untersagt.
 
 ---
 
