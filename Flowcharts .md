@@ -114,12 +114,58 @@ graph TD
     %% == 4. Antwort-Synthese (Gemini)            ==
     %% =============================================
     Call_generate_final_response("Aufruf:<br>orchestrator.generate_final_response") --> SynthStart(Start)
-    SynthStart --> ExtractKeyResults["Extrahiere Keys<br>aus NP Struct"]
-    ExtractKeyResults --> BuildGeminiPrompt["Baue Gemini-Prompt"]
-    BuildGeminiPrompt --> CallGeminiAPI[Rufe Gemini API]
-    CallGeminiAPI --> HandleGeminiResponse{"Antwort OK?"}
-    HandleGeminiResponse -- Ja --> ExtractGeminiText["Extrahiere Text"] --> SynthEndSuccess(Result Text)
-    HandleGeminiResponse -- Nein --> GeminiError["API Fehler"] --> SynthEndError(Error Msg)
+
+    subgraph Input_Sammlung [1. Inputs für Gemini sammeln]
+        direction LR
+        UserInput["Original User Prompt"]
+        NPReport["NeuroPersona Bericht<br>(Kontext)"]
+        NPStruct["Strukturierte NP Ergebnisse<br>(Dominanz, Modullevel...)"]
+    end
+
+    SynthStart --> Input_Sammlung
+
+    subgraph Prompt_Erstellung [2. Prompt für Gemini erstellen]
+        direction TB
+        ExtractKeyResults["Extrahiere dominante Kat.,<br>Modullevel aus NP Struct"]
+        AssemblePrompt["Baue Prompt zusammen:<br>1. User Prompt<br>2. NP Bericht (Kontext)<br>3. NP Extrakt (Kontext)<br>4. **Instruktionen** (Direkte Antwort,<br>Stil-Anpassung basierend<br>auf Modulleveln,<br>KEINE NP-Metadaten!)"]
+        ExtractKeyResults --> AssemblePrompt
+    end
+
+    Input_Sammlung --> Prompt_Erstellung
+
+    subgraph Gemini_Verarbeitung [3. Gemini API Verarbeitung (Blackbox)]
+        direction TB
+        %% Inputs zum Knoten bringen
+        AssemblePrompt --> CallGeminiAPI["Sende Prompt an<br>Gemini API<br>(model.generate_content)"]
+
+        %% Interne Verarbeitung (konzeptuell)
+        InternalGeminiProcess{{"**Gemini LLM<br>(Inferenz)**<br><br><i>Verarbeitet Prompt:</i><br>- Versteht User-Frage<br>- Nutzt NP-Kontext<br>- Folgt Instruktionen<br>(Stil, Fokus, Verbote)<br>- Generiert Text"}}
+
+        %% Verbindung
+        CallGeminiAPI --> InternalGeminiProcess
+    end
+
+    Prompt_Erstellung --> Gemini_Verarbeitung
+
+
+    subgraph Ergebnis_Handhabung [4. Ergebnis verarbeiten]
+         direction TB
+         HandleGeminiResponse{"Empfange Antwort<br>von API<br>(response Objekt)"}
+         CheckResponse{"Antwort OK<br>& nicht blockiert?"}
+         ExtractText["Extrahiere finalen<br>Antwort-Text<br>(response.text / .parts)"]
+         FormatError["Formatiere<br>Fehlermeldung"]
+
+         HandleGeminiResponse --> CheckResponse
+         CheckResponse -- Ja --> ExtractText --> SynthEndSuccess(Finaler Antworttext)
+         CheckResponse -- Nein --> FormatError --> SynthEndError(Fehlermeldung)
+    end
+
+    Gemini_Verarbeitung --> Ergebnis_Handhabung
+
+    %% Verbindung zum vorherigen/nächsten Diagramm
+    Call_generate_final_response --> SynthStart
+    SynthEndSuccess --> ToDiagram2_Success["(Zurück zu Diagramm 2 - Erfolg)"]
+    SynthEndError --> ToDiagram2_Error["(Zurück zu Diagramm 2 - Fehler)"]
 
     %% Ende dieses Diagramms
 ```
