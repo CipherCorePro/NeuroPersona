@@ -113,61 +113,89 @@ graph TD
     %% =============================================
     %% == 4. Antwort-Synthese (Gemini)            ==
     %% =============================================
-    Call_generate_final_response("Aufruf:<br>orchestrator.generate_final_response") --> SynthStart(Start)
 
-    subgraph Input_Sammlung [1. Inputs für Gemini sammeln]
+    %% == 1. NODES DEFINITION ==
+    Call_generate_final_response("Aufruf:<br>orchestrator.generate_final_response")
+    InputCollectionPhase["1. Input Sammlung"]
+    PromptCreationPhase["2. Prompt Erstellung"]
+    GeminiProcessingPhase["3. Gemini API Verarbeitung"]
+    ResultHandlingPhase["4. Ergebnis Verarbeitung"]
+    ToDiagram2_Success["(Zurück zu Diagramm 2 - Erfolg)"]
+    ToDiagram2_Error["(Zurück zu Diagramm 2 - Fehler)"]
+
+    %% Nodes within Input_Sammlung Subgraph
+    subgraph Input_Sammlung_Details [Details: Input Sammlung]
         direction LR
-        UserInput["Original User Prompt"]
-        NPReport["NeuroPersona Bericht<br>(Kontext)"]
-        NPStruct["Strukturierte NP Ergebnisse<br>(Dominanz, Modullevel...)"]
+        IS_UserInput["Original User Prompt"]
+        IS_NPReport["NeuroPersona Bericht<br>(Kontext)"]
+        IS_NPStruct["Strukturierte NP Ergebnisse<br>(Dominanz, Modullevel...)"]
     end
 
-    SynthStart --> Input_Sammlung
-
-    subgraph Prompt_Erstellung [2. Prompt für Gemini erstellen]
+    %% Nodes within Prompt_Erstellung Subgraph
+    subgraph Prompt_Erstellung_Details [Details: Prompt Erstellung]
         direction TB
-        ExtractKeyResults["Extrahiere dominante Kat.,<br>Modullevel aus NP Struct"]
-        AssemblePrompt["Baue Prompt zusammen:<br>1. User Prompt<br>2. NP Bericht (Kontext)<br>3. NP Extrakt (Kontext)<br>4. **Instruktionen** (Direkte Antwort,<br>Stil-Anpassung basierend<br>auf Modulleveln,<br>KEINE NP-Metadaten!)"]
-        ExtractKeyResults --> AssemblePrompt
+        PE_ExtractKeyResults["Extrahiere dominante Kat.,<br>Modullevel aus NP Struct"]
+        PE_AssemblePrompt["Baue Prompt zusammen:<br>Inputs + **Instruktionen**(...)"]
     end
 
-    Input_Sammlung --> Prompt_Erstellung
-
-    subgraph Gemini_Verarbeitung [3. Gemini API Verarbeitung (Blackbox)]
+    %% Nodes within Gemini_Verarbeitung Subgraph
+    subgraph Gemini_Verarbeitung_Details [Details: Gemini API Verarbeitung - Blackbox]
         direction TB
-        %% Inputs zum Knoten bringen
-        AssemblePrompt --> CallGeminiAPI["Sende Prompt an<br>Gemini API<br>(model.generate_content)"]
-
-        %% Interne Verarbeitung (konzeptuell)
-        InternalGeminiProcess{{"**Gemini LLM<br>(Inferenz)**<br><br><i>Verarbeitet Prompt:</i><br>- Versteht User-Frage<br>- Nutzt NP-Kontext<br>- Folgt Instruktionen<br>(Stil, Fokus, Verbote)<br>- Generiert Text"}}
-
-        %% Verbindung
-        CallGeminiAPI --> InternalGeminiProcess
+        GV_CallGeminiAPI["Sende Prompt an<br>Gemini API"]
+        GV_InternalGeminiProcess{{"**Gemini LLM<br>(Inferenz)**<br><br><i>Verarbeitet Prompt...</i>"}}
     end
 
-    Prompt_Erstellung --> Gemini_Verarbeitung
-
-
-    subgraph Ergebnis_Handhabung [4. Ergebnis verarbeiten]
+    %% Nodes within Ergebnis_Handhabung Subgraph
+    subgraph Ergebnis_Handhabung_Details [Details: Ergebnis Verarbeitung]
          direction TB
-         HandleGeminiResponse{"Empfange Antwort<br>von API<br>(response Objekt)"}
-         CheckResponse{"Antwort OK<br>& nicht blockiert?"}
-         ExtractText["Extrahiere finalen<br>Antwort-Text<br>(response.text / .parts)"]
-         FormatError["Formatiere<br>Fehlermeldung"]
-
-         HandleGeminiResponse --> CheckResponse
-         CheckResponse -- Ja --> ExtractText --> SynthEndSuccess(Finaler Antworttext)
-         CheckResponse -- Nein --> FormatError --> SynthEndError(Fehlermeldung)
+         EH_HandleGeminiResponse{"Empfange Antwort<br>von API"}
+         EH_CheckResponse{"Antwort OK<br>& nicht blockiert?"}
+         EH_ExtractText["Extrahiere finalen<br>Antwort-Text"]
+         EH_FormatError["Formatiere<br>Fehlermeldung"]
+         EH_EndSuccess(Finaler Antworttext)
+         EH_EndError(Fehlermeldung)
     end
 
-    Gemini_Verarbeitung --> Ergebnis_Handhabung
+    %% == 2. LINKS DEFINITION ==
 
-    %% Verbindung zum vorherigen/nächsten Diagramm
-    Call_generate_final_response --> SynthStart
-    SynthEndSuccess --> ToDiagram2_Success["(Zurück zu Diagramm 2 - Erfolg)"]
-    SynthEndError --> ToDiagram2_Error["(Zurück zu Diagramm 2 - Fehler)"]
+    %% Hauptfluss zwischen den Phasen
+    Call_generate_final_response --> InputCollectionPhase
+    InputCollectionPhase --> PromptCreationPhase
+    PromptCreationPhase --> GeminiProcessingPhase
+    GeminiProcessingPhase --> ResultHandlingPhase
+
+    %% Verbindungen zu und innerhalb Subgraph 1: Input Sammlung
+    %% Von Hauptphase zum ersten internen Knoten
+    InputCollectionPhase --> IS_UserInput
+    IS_UserInput --> IS_NPReport
+    IS_NPReport --> IS_NPStruct
+
+    %% Verbindungen zu und innerhalb Subgraph 2: Prompt Erstellung
+    %% Von Hauptphase zum ersten internen Knoten
+    PromptCreationPhase --> PE_ExtractKeyResults
+    PE_ExtractKeyResults --> PE_AssemblePrompt
+
+    %% Verbindungen zu und innerhalb Subgraph 3: Gemini Verarbeitung
+    %% Von Hauptphase zum ersten internen Knoten
+    GeminiProcessingPhase --> GV_CallGeminiAPI
+    GV_CallGeminiAPI --> GV_InternalGeminiProcess
+
+    %% Verbindungen zu und innerhalb Subgraph 4: Ergebnis Handhabung
+    %% Von Hauptphase zum ersten internen Knoten
+    ResultHandlingPhase --> EH_HandleGeminiResponse
+    EH_HandleGeminiResponse --> EH_CheckResponse
+    EH_CheckResponse -- Ja --> EH_ExtractText
+    EH_ExtractText --> EH_EndSuccess
+    EH_CheckResponse -- Nein --> EH_FormatError
+    EH_FormatError --> EH_EndError
+
+    %% Finale Verbindungen zu den Endpunkten
+    EH_EndSuccess --> ToDiagram2_Success
+    EH_EndError --> ToDiagram2_Error
 
     %% Ende dieses Diagramms
+
+
 ```
 
 **Diagramm 5: GUI Post-Workflow**
